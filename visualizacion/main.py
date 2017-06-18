@@ -33,6 +33,34 @@ for country in pycountry.countries:
     country_code[country.alpha_2] = country.alpha_3
    
 
+def selectPlot(country, tone_val, val, dict_list):
+    dict1 = dict_list[0]
+    dict2 = dict_list[1]
+    dict3 = dict_list[2]
+    dict4 = dict_list[3]
+    tone_val = float(tone_val)
+    
+    if(tone_val >= 1.0 and tone_val < 1.25):
+        try:
+            dict1[country] += val
+        except(KeyError):
+            dict1[country] = val
+    elif(tone_val >= 1.25 and tone_val < 1.5):
+        try:
+            dict2[country] += val
+        except(KeyError):
+            dict2[country] = val
+    elif(tone_val >= 1.5 and tone_val < 1.75):
+        try:
+            dict3[country] += val
+        except(KeyError):
+            dict3[country] = val
+    elif(tone_val >= 1.75 and tone_val <= 2.0):
+        try:
+            dict4[country] += val
+        except(KeyError):
+            dict4[country] = val
+    return [dict1, dict2, dict3, dict4]
 
 '''
 file2csv transforms a file into a CSV document with a "\t" regex by default.
@@ -45,44 +73,46 @@ def file2csv(file_dir, file_name, out_path, regex = "\t"):
     print("Converting:\n" + file_dir + file_name + "\nOUT:\n" + out_path)
     in_file = open(file_dir + file_name, "r")
     
-    out_file = open(out_path, "w")
-    out_file.write("CODE_COUNTRY" + regex + "ADJ_TONE" + regex + "VAL")
+    out_files = []
+    for i in range(4):
+        out_files.append(open(out_path + "_" + str(i) + ".csv", "w"))
+        out_files[i].write("CODE_COUNTRY" + regex + "VAL")
     
-    country_dict = {}
+    country_dict_list = [{}, {}, {}, {}]
+    
     
     line = in_file.readline()
     while(line != ""):
         (country, tone, val) = line.strip().split(",")
         if(country != "("):
             country = country[1:]
-            try:
-                country_dict[country][0] += float(tone)
-                country_dict[country][1] += float(val[:-1])
-            except(KeyError):
-                country_dict[country] = (float(tone), float(val[:-1]))
+            country_dict_list = selectPlot(country, tone, val[:-1], country_dict_list)
         line = in_file.readline()
-    for country in country_dict.keys():
-        try:
-            out_file.write("\n" + str(country_code[country]) + regex 
-                       + str(country_dict[country][0]) + regex 
-                       + str(country_dict[country][1]))
-        except(KeyError):
-            print("error")
+    i = 0
+    for country_dict in country_dict_list:    
+        for country in country_dict.keys():
+            try:
+                out_files[i].write("\n" + str(country_code[country]) + regex 
+                           + str(country_dict[country]))
+            except(KeyError):
+                print("Country code not in DB: " + str(country))
+        i += 1
         
 
 IN_PATH = "/home/lucas/git/Patos_Project/big_results2/"
 state_geo = r'/home/lucas/git/Patos_Project/utils/countries_light.json'
+colors = ["YlGn", "BuPu", "YlOrRd", "YlGnBu"]
 
 for elem in ["avg", "best5", "worst5"]:
-    file2csv(IN_PATH + elem, "/part-00000", IN_PATH + elem + "/" + elem + ".csv", regex = ",")
-    
-    map_data = pd.read_csv(IN_PATH + elem + "/" + elem + ".csv")
-    mapa = folium.Map(location=[48, -102], zoom_start=3)
-    mapa.choropleth(geo_path=state_geo, data=map_data,
-                columns=["CODE_COUNTRY", "VAL"],
-                key_on='feature.id',
-                fill_color='YlGn', fill_opacity=0.7, line_opacity=0.2,
-                legend_name='Unemployment Rate (%)')
-    mapa.save(elem + '.html')
+    file2csv(IN_PATH + elem, "/part-00000", IN_PATH + elem + "/" + elem, regex = ",")
+    for i in range(4):
+        map_data = pd.read_csv(IN_PATH + elem + "/" + elem + "_" + str(i) + ".csv")
+        mapa = folium.Map(location=[48, -102], zoom_start=3)
+        mapa.choropleth(geo_path=state_geo, data=map_data,
+                    columns=["CODE_COUNTRY", "VAL"],
+                    key_on='feature.id',
+                    fill_color=colors[i], fill_opacity=0.7, line_opacity=0.2,
+                    legend_name='Visualizacion del impacto de las noticias a nivel mundial')
+        mapa.save("/home/lucas/git/Patos_Project/visualizacion/" + elem + "/_" + str(i) + '.html')
 
     
