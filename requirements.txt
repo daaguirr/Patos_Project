@@ -1,3 +1,4 @@
+pycountry
 reverse_geocode
 pandas
 folium
