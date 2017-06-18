@@ -15,13 +15,27 @@ Cada linea de los archivos anteriores consisten en:
 
 Es necesario transformarlos a CSV, donde el CODIGO_PAIS sea el primer valor y VAL_CALCULADO el segundo.
 Ademas es necesario separar por el valor del TONO_AJUSTADO, donde:
-    V_A \in [1.0, 1.25[ entonces se pinta de color ROJO
-    V_A \in [1.25, 1.5[ entonces se pinta de color AMARILLO
-    V_A \in [1.5, 1.75[ entonces se pinta de color VERDE
-    V_A \in [1.75, 2.0[ entonces se pinta de color AZUL
+    V_A \in [1.0, 1.25[ entonces se pinta de color ####
+    V_A \in [1.25, 1.5[ entonces se pinta de color ####
+    V_A \in [1.5, 1.75[ entonces se pinta de color ####
+    V_A \in [1.75, 2.0[ entonces se pinta de color ####
     
-Tomamos el archivo, lo transformamos a CSV, creando una columna por valor.
-Luego leemos el CSV y se lo entregamos a folium para obtener las visualizaciones.
+Tomamos el archivo part-00000 correspondiente a cada uno de los casos (AVG, BEST5, WORST5), y por cada linea
+se realizan dos cosas:
+    -La primera es separar en funcion del valor de TONO_AJUSTADO, el cual esta comprendido entre [1.0, 2.0],
+        por lo que se separa en 4 subconjuntos de igual rango ([1.0, 1.25[ ; [1.25, 1.5[ ; [1.5, 1.75[ ; [1.75 , 2.0]),
+        los cuales corresponden cada uno a un diccionario distinto.
+    -La segunda corresponde a introducir en cada uno de los diccionarios previamente descritos la suma de
+        los VAL_CALCULADOs correspondientes a cada pais. Es decir, dico[CODIGO_PAIS] = \sum{VAL_CALCULADO}.
+Asi se obtiene un diccionario por tramo, por conjunto.
+
+A continuacion, se toman estos diccionarios y se escriben en un archivo con formato CSV. Este ultimo es 
+utilizado para entregarle los valores a la funcion de la libreria FOLIUM que es responsable de la visualizacion.
+
+Cabe resaltar que los valores del procesado entregan codigos de pais que corresponden a la norma IS O316-1 
+alpha-2, y FOLIUM necesita los codigos alpha-3, por lo que se realizo una conversion utilizando la libreria
+pycountry. En pocas palabras, se genero un diccionario que tuviera como llave el codigo alpha-2 y como valor
+el codigo alpha-3 de cada pais.
 '''
 
 import pandas as pd
