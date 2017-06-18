@@ -26,6 +26,13 @@ Luego leemos el CSV y se lo entregamos a folium para obtener las visualizaciones
 
 import pandas as pd
 import folium
+import pycountry
+
+country_code = {}
+for country in pycountry.countries:
+    country_code[country.alpha_2] = country.alpha_3
+   
+
 
 '''
 file2csv transforms a file into a CSV document with a "\t" regex by default.
@@ -55,9 +62,12 @@ def file2csv(file_dir, file_name, out_path, regex = "\t"):
                 country_dict[country] = (float(tone), float(val[:-1]))
         line = in_file.readline()
     for country in country_dict.keys():
-        out_file.write("\n" + str(country) + regex 
+        try:
+            out_file.write("\n" + str(country_code[country]) + regex 
                        + str(country_dict[country][0]) + regex 
                        + str(country_dict[country][1]))
+        except(KeyError):
+            print("error")
         
 
 IN_PATH = "/home/lucas/git/Patos_Project/big_results2/"
