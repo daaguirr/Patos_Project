@@ -4,6 +4,7 @@ import pandas as pd
 import folium
 import pycountry
 import os, json
+import numpy as np
 
 """
 Created on Sat Jun 17 20:32:55 2017
@@ -55,22 +56,22 @@ def selectPlot(country, tone_val, val, dict_list):
     dict4 = dict_list[3]
     tone_val = float(tone_val)
 
-    if 1.0 <= tone_val < 1.25:
+    if -100 <= tone_val < -50:
         try:
             dict1[country] += val
         except KeyError:
             dict1[country] = val
-    elif 1.25 <= tone_val < 1.5:
+    elif -50 <= tone_val < 0:
         try:
             dict2[country] += val
         except KeyError:
             dict2[country] = val
-    elif 1.5 <= tone_val < 1.75:
+    elif 0 <= tone_val < 50:
         try:
             dict3[country] += val
         except KeyError:
             dict3[country] = val
-    elif 1.75 <= tone_val <= 2.0:
+    elif 50 <= tone_val <= 100:
         try:
             dict4[country] += val
         except KeyError:
@@ -119,7 +120,7 @@ def file2csv(file_dir, file_name, out_path, regex="\t"):
 dir_path = os.path.dirname(os.path.realpath(__file__))
 IN_PATH = dir_path[:-14] + "/big_results2/"
 state_geo = dir_path[:-14] + '/utils/countries_light.json'
-colors = ["OrRd", "YlGn", "BuPu", 'PuBu']
+colors = ["OrRd", "YlGn", "PuBu", 'RdPu']
 
 with open(state_geo) as data_file:
     data = json.load(data_file)
@@ -145,6 +146,44 @@ for elem in ["avg", "best5", "worst5"]:
                         columns=["CODE_COUNTRY", "VAL"],
                         key_on='feature.id',
                         fill_color=colors[i], fill_opacity=0.7, line_opacity=0.2,
-                        legend_name=elem + label(i))
+                        legend_name=elem + " " + label(i))
         os.remove(dir_path + '/filtertmp.json')
-    mapa.save(dir_path + "/" + elem + '.html')
+    mapa.save(dir_path + "/" + elem + '_absolute.html')
+
+
+    def convert(x):
+        try:
+            return country_code[x[0]]
+        except KeyError:
+            print("Country code not in DB: " + str(x[0]))
+            return ''
+
+
+    dat = pd.read_csv(IN_PATH + elem + "/part-00000")
+    dat.columns = ['Code', 'Tone', 'Imp']
+    dat['Code'] = dat['Code'].map(lambda x: convert([x[1:]]))
+    dat['Imp'] = dat['Imp'].map(lambda x: float(x[:-1]))
+    dat['Tone'] = dat['Tone'].map(lambda x: float(x))
+    dat = dat[dat['Code'] != '']
+
+    max_tone = dat['Tone'].max()
+    min_tone = dat['Tone'].min()
+    delta = max_tone - min_tone
+    intervals = [min_tone, min_tone + delta / 4.0, min_tone + delta * 2.0 / 4.0, min_tone + delta * 3.0 / 4.0, max_tone]
+    filters = [dat[(intervals[i] <= dat['Tone']) & (dat['Tone'] < intervals[i + 1])] for i in range(len(intervals) - 1)]
+
+    mapa = folium.Map(location=[48, -102], zoom_start=3)
+    for i in range(len(filters)):
+        filtered = {u'type': u'FeatureCollection', u'features':
+            filter(lambda x: filters[i]['Code'].tolist().count(x['id']) > 0, data['features'])}
+        with open(dir_path + '/filtertmp.json', 'w') as fp:
+            json.dump(filtered, fp)
+
+        mapa.choropleth(geo_path=dir_path + '/filtertmp.json', data=filters[i][['Code', 'Imp']],
+                        columns=["Code", "Imp"],
+                        threshold_scale=np.linspace(filters[i]['Imp'].min(), filters[i]['Imp'].max(), 6).tolist(),
+                        key_on='feature.id',
+                        fill_color=colors[i], fill_opacity=0.7, line_opacity=0.2,
+                        legend_name=elem + " " + label(i))
+        os.remove(dir_path + '/filtertmp.json')
+    mapa.save(dir_path + "/" + elem + '_relative.html')

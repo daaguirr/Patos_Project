@@ -22,12 +22,6 @@ object mainProject {
       pow(a, isRoot)
     }
 
-    def color(x: Double) = x match {
-      case y if y>= -100 && y < -50 => 0.0
-      case y if y>= -50 && y < 0 => 1.0
-      case y if y>= 0 && y < 50 => 2.0
-      case y if y>= 50 && y <= 100 => 3.0
-    }
     def metric(x : Array[String]) : Double = {
       try
       {
@@ -56,12 +50,12 @@ object mainProject {
 
     val input = input1.filter(a=> {
       val split1 = a.split('\t')
-      split1.length == 64 && split1(34) != ""
+      split1.length == 64 && split1(34) != "" && split1(25) != "" && split1(30) != "" && split1(31) != "" && split1(32) != "" && split1(33) != ""
     })
 
     val general1 = input.flatMap(line => {
       val split = line.split('\t')
-      val met = (Array(color(split(34).toDouble)), Array(metric(split)))
+      val met = (Array(split(34).toDouble), Array(metric(split)))
       Array(split(61),split(62),split(63)).map(b => (b, met))
     })
 
@@ -71,10 +65,10 @@ object mainProject {
 
     val real_tuples = country_tuples.map(a => (a._1, a._2._1.zip(a._2._2), a._2._1.min, a._2._1.max))
 
-    val best5 = real_tuples.map(a=> (a._1, a._2.filter( b=> b._2 >= a._4 - (a._4- a._3) * 0.05))).coalesce(1)
-    val worst5 = real_tuples.map(a=> (a._1, a._2.filter( b=> b._2 <= a._3 + (a._4- a._3) * 0.05))).coalesce(1)
+    val best5 = real_tuples.map(a=> (a._1, a._2.filter( b=> b._1 >= a._4 - (a._4- a._3) * 0.05))).coalesce(1)
+    val worst5 = real_tuples.map(a=> (a._1, a._2.filter( b=> b._1 <= a._3 + (a._4- a._3) * 0.05))).coalesce(1)
     val average = real_tuples.map(a=> (a._1, a._2.filter( b=> {
-      b._2 >= a._3 + (a._4- a._3) * 0.05 && b._2 <= a._4 - (a._4- a._3) * 0.05}))).coalesce(1)
+      b._1 >= a._3 + (a._4- a._3) * 0.05 && b._1 <= a._4 - (a._4- a._3) * 0.05}))).coalesce(1)
 
     //val best5avg = best5.map( a => (a._1, a._2.map(b => b._1).sum / a._2.length , a._2.map(b => b._2).sum / a._2.length))
     val avgs = Array(best5, worst5, average).map(c =>
