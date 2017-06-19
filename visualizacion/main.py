@@ -44,11 +44,24 @@ pycountry. En pocas palabras, se genero un diccionario que tuviera como llave el
 el codigo alpha-3 de cada pais.
 '''
 
+
+'''
+This is a dictionary to convert from ISO 3166-1 alpha2 code into alpha3 code. In plain words,
+it is used to change from a 2-letter Country Code into a 3-letter Country Code, which is 
+supported by the FOLIUM library.
+'''
 country_code = {}
 for country in pycountry.countries:
     country_code[country.alpha_2] = country.alpha_3
 
 
+'''
+This function enables the segmentation of results based in their TONE_VAL, or tone value.
+For each line in the original file, we receive (country, tone_val, val), which is then
+separated depending on the value of tone_val into different dictionaries belonging to
+dict_list variable. The result is that each dictionary holds the sum of the values,
+associated to each country.
+'''
 def selectPlot(country, tone_val, val, dict_list):
     dict1 = dict_list[0]
     dict2 = dict_list[1]
@@ -116,7 +129,17 @@ def file2csv(file_dir, file_name, out_path, regex="\t"):
                 print("Country code not in DB: " + str(country))
         i += 1
 
+'''
+Label encapsulates the labels for each fill-color in the resulting HTML documents.
+'''
+def label(i):
+    if i == 0: return u'muy malo'
+    if i == 1: return u'malo'
+    if i == 2: return u'bueno'
+    if i == 3: return u'muy bueno'
+    
 
+#### PARAMETERS ####
 dir_path = os.path.dirname(os.path.realpath(__file__))
 IN_PATH = dir_path[:-14] + "/big_results2/"
 state_geo = dir_path[:-14] + '/utils/countries_light.json'
@@ -126,13 +149,9 @@ with open(state_geo) as data_file:
     data = json.load(data_file)
 
 
-def label(i):
-    if i == 0: return u'muy malo'
-    if i == 1: return u'malo'
-    if i == 2: return u'bueno'
-    if i == 3: return u'muy bueno'
 
 
+#### MAIN METHOD ####
 for elem in ["avg", "best5", "worst5"]:
     file2csv(IN_PATH + elem, "/part-00000", IN_PATH + elem + "/" + elem, regex=",")
     mapa = folium.Map(location=[48, -102], zoom_start=3)
@@ -150,7 +169,10 @@ for elem in ["avg", "best5", "worst5"]:
         os.remove(dir_path + '/filtertmp.json')
     mapa.save(dir_path + "/" + elem + '_absolute.html')
 
-
+    
+    '''
+    Used to convert ISO 3166-1 code alpha2 to alpha3.
+    '''
     def convert(x):
         try:
             return country_code[x[0]]
